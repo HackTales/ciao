@@ -24,6 +24,14 @@ func New(ctx context.Context, file, projectId, ds, table string) (*Ciao, error) 
 	}, nil
 }
 
+func NewFromClient(client *bigquery.Client, ds, table string) *Ciao {
+	var tbl = client.Dataset(ds).Table(table)
+	return &Ciao{
+		client: client,
+		table:  tbl,
+	}
+}
+
 func (ciao *Ciao) Insert(ctx context.Context, e *Event) error {
 	var inserter = ciao.table.Inserter()
 	return inserter.Put(ctx, e)
