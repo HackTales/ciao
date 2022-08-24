@@ -18,6 +18,10 @@ type Event struct {
 }
 
 func NewEvent(options ...Option) *Event {
+	return NewRawEvent(append(options, GenerateId, SetTimestamp)...)
+}
+
+func NewRawEvent(options ...Option) *Event {
 	var e = &Event{}
 	for _, option := range options {
 		option(e)
