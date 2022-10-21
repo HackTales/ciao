@@ -1,8 +1,10 @@
 package ciao
 
 import (
+	"bytes"
 	"cloud.google.com/go/bigquery"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -61,6 +63,15 @@ func (e *Event) Save() (map[string]bigquery.Value, string, error) {
 		m["author"] = e.Author
 	}
 	return m, "", nil
+}
+
+func (e *Event) String() string {
+	var buf = bytes.NewBuffer(nil)
+	_, _ = fmt.Fprintf(buf, "Event %s, type: %s, at: %s, subject: %s, author: %s\n", e.Id, e.Type, e.Timestamp.Format(time.RFC3339Nano), e.Subject, e.Author)
+	_, _ = fmt.Fprintf(buf, "Event %s payload start:\n", e.Id)
+	_, _ = fmt.Fprintf(buf, e.payload)
+	_, _ = fmt.Fprintf(buf, "\n----\nEvent %s payload end", e.Id)
+	return buf.String()
 }
 
 type Option func(e *Event)
