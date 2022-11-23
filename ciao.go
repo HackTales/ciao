@@ -36,3 +36,32 @@ func (ciao *Ciao) Insert(ctx context.Context, e *Event) error {
 	var inserter = ciao.table.Inserter()
 	return inserter.Put(ctx, e)
 }
+
+type BulkInsert struct {
+	ciao      *Ciao
+	buf       []*Event
+	AutoFlush int
+}
+
+func (ciao *Ciao) BulkInsert() *BulkInsert {
+	return &BulkInsert{
+		ciao: ciao,
+	}
+}
+
+func (b *BulkInsert) Insert(ctx context.Context, e *Event) error {
+	b.buf = append(b.buf, e)
+	if b.AutoFlush > 0 && len(b.buf) >= b.AutoFlush {
+		return b.Flush(ctx)
+	}
+	return nil
+}
+
+func (b *BulkInsert) Flush(ctx context.Context) error {
+	var inserter = b.ciao.table.Inserter()
+	if err := inserter.Put(ctx, b.buf); err != nil {
+		return err
+	}
+	b.buf = b.buf[:0]
+	return nil
+}
