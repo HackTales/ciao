@@ -58,6 +58,9 @@ func (b *BulkInsert) Insert(ctx context.Context, e *Event) error {
 }
 
 func (b *BulkInsert) Flush(ctx context.Context) error {
+	if len(b.buf) == 0 {
+		return nil
+	}
 	var inserter = b.ciao.table.Inserter()
 	if err := inserter.Put(ctx, b.buf); err != nil {
 		return err
