@@ -68,3 +68,41 @@ func (b *BulkInsert) Flush(ctx context.Context) error {
 	b.buf = b.buf[:0]
 	return nil
 }
+
+/*
+
+[
+    {
+        "name": "id",
+        "type": "STRING",
+        "mode": "REQUIRED",
+        "maxLength": "64"
+    },
+    {
+        "name": "timestamp",
+        "type": "TIMESTAMP",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "type",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "subject",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "author",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "payload",
+        "type": "JSON",
+        "mode": "NULLABLE"
+    }
+]
+
+*/

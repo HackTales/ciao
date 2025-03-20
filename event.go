@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
+type Payload map[string]any
 type Event struct {
 	Id        string
 	Timestamp time.Time
@@ -20,7 +21,10 @@ type Event struct {
 }
 
 func NewEvent(options ...Option) *Event {
-	return NewRawEvent(append(options, GenerateId, SetTimestamp)...)
+	return NewRawEvent(append(options, GenerateIdIfMissing, SetTimestamp)...)
+}
+func NewEventWithId(id string, options ...Option) *Event {
+	return NewRawEvent(append(options, WithId(id), SetTimestamp)...)
 }
 
 func NewRawEvent(options ...Option) *Event {
@@ -31,7 +35,7 @@ func NewRawEvent(options ...Option) *Event {
 	return e
 }
 
-func (e *Event) SetPayload(payload interface{}) error {
+func (e *Event) SetPayload(payload Payload) error {
 	b, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -40,8 +44,16 @@ func (e *Event) SetPayload(payload interface{}) error {
 	return nil
 }
 
-func (e *Event) SetEncodedPayload(payload string) {
-	e.payload = payload
+func (e *Event) SetPayloadFromAny(payload any) error {
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	var m = make(Payload)
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	return e.SetPayload(m)
 }
 
 func (e *Event) Save() (map[string]bigquery.Value, string, error) {
@@ -69,7 +81,7 @@ func (e *Event) String() string {
 	var buf = bytes.NewBuffer(nil)
 	_, _ = fmt.Fprintf(buf, "Event %s, type: %s, at: %s, subject: %s, author: %s\n", e.Id, e.Type, e.Timestamp.Format(time.RFC3339Nano), e.Subject, e.Author)
 	_, _ = fmt.Fprintf(buf, "Event %s payload start:\n", e.Id)
-	_, _ = fmt.Fprintf(buf, e.payload)
+	_, _ = fmt.Fprintf(buf, "%+v", e.payload)
 	_, _ = fmt.Fprintf(buf, "\n----\nEvent %s payload end", e.Id)
 	return buf.String()
 }
@@ -78,6 +90,17 @@ type Option func(e *Event)
 
 func GenerateId(e *Event) {
 	e.Id = uuid.NewString()
+}
+func GenerateIdIfMissing(e *Event) {
+	if len(e.Id) == 0 {
+		e.Id = uuid.NewString()
+	}
+}
+
+func WithId(id string) func(e *Event) {
+	return func(e *Event) {
+		e.Id = id
+	}
 }
 
 func SetTimestamp(e *Event) {
