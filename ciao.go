@@ -8,8 +8,9 @@ import (
 )
 
 type Ciao struct {
-	client *bigquery.Client
-	table  *bigquery.Table
+	client              *bigquery.Client
+	table               *bigquery.Table
+	DefaultEventBuilder *EventBuilder
 }
 
 func New(ctx context.Context, file, projectId, ds, table string) (*Ciao, error) {
@@ -30,6 +31,10 @@ func NewFromClient(client *bigquery.Client, ds, table string) *Ciao {
 		client: client,
 		table:  tbl,
 	}
+}
+
+func (ciao *Ciao) InitDefaultEventBuilder(author string) {
+	ciao.DefaultEventBuilder = ciao.NewEventBuilder(author)
 }
 
 func (ciao *Ciao) Insert(ctx context.Context, e *Event) error {

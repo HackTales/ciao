@@ -5,14 +5,47 @@ import (
 	"cloud.google.com/go/bigquery"
 	"encoding/json"
 	"fmt"
+	"github.com/rs/xid"
 	"time"
-
-	"github.com/google/uuid"
 )
+
+type EventBuilder struct {
+	Ciao   *Ciao
+	Author string
+}
+
+func (ciao *Ciao) NewEventBuilder(author string) *EventBuilder {
+	return &EventBuilder{Ciao: ciao, Author: author}
+}
+
+func (eb *EventBuilder) NewEvent(_type string, timestamp *time.Time, payload any) (*Event, error) {
+	evt := NewRawEvent()
+	evt.Author = eb.Author
+	evt.Type = _type
+	if timestamp != nil {
+		evt.SetTimestamp(*timestamp)
+	} else {
+		evt.SetTimestamp(time.Now())
+	}
+	evt.RegenId()
+	if payload != nil {
+		switch p := payload.(type) {
+		case Payload:
+			if err := evt.SetPayload(p); err != nil {
+				return nil, err
+			}
+		default:
+			if err := evt.SetPayloadFromAny(p); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return evt, nil
+}
 
 type Payload map[string]any
 type Event struct {
-	Id        string
+	Id        xid.ID
 	Timestamp time.Time
 	Type      string
 	Subject   string
@@ -21,10 +54,7 @@ type Event struct {
 }
 
 func NewEvent(options ...Option) *Event {
-	return NewRawEvent(append(options, GenerateIdIfMissing, SetTimestamp)...)
-}
-func NewEventWithId(id string, options ...Option) *Event {
-	return NewRawEvent(append(options, WithId(id), SetTimestamp)...)
+	return NewRawEvent(append(options, SetTimestamp, GenerateIdIfMissing)...)
 }
 
 func NewRawEvent(options ...Option) *Event {
@@ -32,6 +62,20 @@ func NewRawEvent(options ...Option) *Event {
 	for _, option := range options {
 		option(e)
 	}
+	return e
+}
+
+func (e *Event) SetTimestamp(ts time.Time) *Event {
+	e.Timestamp = ts
+	return e
+}
+func (e *Event) SetSubject(subject string) *Event {
+	e.Subject = subject
+	return e
+}
+
+func (e *Event) RegenId() *Event {
+	GenerateId(e)
 	return e
 }
 
@@ -89,15 +133,19 @@ func (e *Event) String() string {
 type Option func(e *Event)
 
 func GenerateId(e *Event) {
-	e.Id = uuid.NewString()
+	if e.Timestamp.IsZero() {
+		e.Id = xid.New()
+	} else {
+		e.Id = xid.NewWithTime(e.Timestamp)
+	}
 }
 func GenerateIdIfMissing(e *Event) {
-	if len(e.Id) == 0 {
-		e.Id = uuid.NewString()
+	if e.Id.IsZero() {
+		GenerateId(e)
 	}
 }
 
-func WithId(id string) func(e *Event) {
+func WithId(id xid.ID) func(e *Event) {
 	return func(e *Event) {
 		e.Id = id
 	}
