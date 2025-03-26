@@ -44,6 +44,32 @@ func (eb *EventBuilder) NewEvent(_type string, timestamp *time.Time, payload any
 }
 
 type Payload map[string]any
+
+func (p Payload) Add(k string, v any) Payload {
+	p[k] = v
+	return p
+}
+
+func (p Payload) Merge(p2 Payload) Payload {
+	for k, v := range p2 {
+		p[k] = v
+	}
+	return p
+}
+
+func (p Payload) MergeAny(p2 any) error {
+	b, err := json.Marshal(p2)
+	if err != nil {
+		return err
+	}
+	var m = make(Payload)
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	p.Merge(m)
+	return nil
+}
+
 type Event struct {
 	Id        xid.ID
 	Timestamp time.Time
