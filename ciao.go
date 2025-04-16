@@ -48,9 +48,10 @@ type BulkInsert struct {
 	AutoFlush int
 }
 
-func (ciao *Ciao) BulkInsert() *BulkInsert {
+func (ciao *Ciao) BulkInsert(autoFlushSize int) *BulkInsert {
 	return &BulkInsert{
-		ciao: ciao,
+		ciao:      ciao,
+		AutoFlush: autoFlushSize,
 	}
 }
 
