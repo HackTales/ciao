@@ -55,16 +55,20 @@ func (ciao *Ciao) BulkInsert(autoFlushSize int) *BulkInsert {
 	}
 }
 
+func (b *BulkInsert) Len() int {
+	return len(b.buf)
+}
+
 func (b *BulkInsert) Insert(ctx context.Context, e *Event) error {
 	b.buf = append(b.buf, e)
-	if b.AutoFlush > 0 && len(b.buf) >= b.AutoFlush {
+	if b.AutoFlush > 0 && b.Len() >= b.AutoFlush {
 		return b.Flush(ctx)
 	}
 	return nil
 }
 
 func (b *BulkInsert) Flush(ctx context.Context) error {
-	if len(b.buf) == 0 {
+	if b.Len() == 0 {
 		return nil
 	}
 	var inserter = b.ciao.table.Inserter()
